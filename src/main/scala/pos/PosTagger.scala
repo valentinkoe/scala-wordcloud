@@ -9,6 +9,7 @@ import org.json4s.jackson.JsonMethods._
 
 abstract class PosTagger () {
 
+  var tagSet : Set[String] = Set()
   var seenTags : Map[String, Set[String]] = Map() // word -> possible tags
   var weights : Map[String, Array[Int]] = Map() // tag -> weight vector
 
@@ -20,8 +21,8 @@ abstract class PosTagger () {
     var word = ""
     var tag = ""
 
-    for (tupleList <- trainSamples.sliding(2,1)) {  // TODO: input file must also start with empty line
-      if (!tupleList(1).sameElements(Array(""))) {  // if used to work like java's continue - end of sentence {
+    for (tupleList <- trainSamples.sliding(2,1)) {
+      if (!tupleList(1).sameElements(Array(""))) {  // if is used to work like java's continue - end of sentence {
         if (tupleList(0).sameElements(Array(""))) {
           prevWord = ""
           prevTag = ""
@@ -37,16 +38,17 @@ abstract class PosTagger () {
         var tagsForWord = seenTags.getOrElse(word, Set())
         tagsForWord += tag
         seenTags += (word -> tagsForWord)
+        tagSet += tag
 
         // generate feature vector and add it up to the vector stored for this tag
         // TODO: the next lines could surely be done in a fancy functional way
         var fVec = getFeatureVec(prevWord, prevTag, word)
         if (weights.contains(tag)) {
           val prevWeights = weights(tag)
-          weights += (tag -> prevWeights.zip(fVec).map { case (x, y) => x + y } ) // element-wise addition of vectors
+          weights += tag -> prevWeights.zip(fVec).map{case (x, y) => x+y} // element-wise addition of vectors
         }
         else {
-          weights += (tag -> fVec)
+          weights += tag -> fVec
         }
       }
     }
@@ -67,7 +69,42 @@ abstract class PosTagger () {
     new PrintWriter(saveFile) { write(pretty(render(json))); close() }
   }
 
-  def tag(words : Array[String]): Array[String] = ???  // TODO
+  def tag(words : Array[String]): Array[String] = {
+    val wordsToTag = "" +: words
+    var tags = Array("")
+
+    var prevWord = ""
+    var word = ""
+    var tag = ""
+
+    var possibleTags = Set[String]()
+
+    for (tuple <- wordsToTag.sliding(2, 1)) {
+      prevWord = tuple(0)
+      word = tuple(1)
+
+      // if we have seen this word before, only check the possible tags
+      possibleTags = seenTags.getOrElse(word, tagSet)
+
+      if (possibleTags.size == 1) {
+        tags = tags :+ possibleTags.head
+      }
+      else {
+        val featVec = getFeatureVec(prevWord, tags.last, word)
+        var maxSim = Float.NegativeInfinity
+        var bestTag = "NN"
+        for (pTag <- possibleTags) {
+          val sim = featVec.zip(weights(pTag)).map{case (x, y) => x+y}.sum
+          if (sim > maxSim) {
+            maxSim = sim
+            bestTag = pTag
+          }
+        }
+        tags = tags :+ bestTag
+      }
+    }
+    tags.tail
+  }
 
 }
 
