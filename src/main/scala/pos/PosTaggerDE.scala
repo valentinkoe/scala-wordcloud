@@ -1,9 +1,8 @@
 package pos
 
-class PosTaggerDE extends PosTagger {
+class PosTaggerDE extends PosTagger with FeatureExtractorDE
 
-  override var seenTags: Map[String, Set[String]] = Map()
-  override var weights: Map[String, Float] = Map()
+trait FeatureExtractorDE extends FeatureExtractor {
 
   private val featureList : List[String] =
     List("beginningOfSentence",

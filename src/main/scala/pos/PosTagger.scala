@@ -1,11 +1,16 @@
 package pos
 
+import java.io.FileInputStream
+import java.io.PrintWriter
+
 import scala.io.Source
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
 
-abstract class PosTagger {
+abstract class PosTagger () {
 
-  var seenTags : Map[String, Set[String]]  // word -> possible tags
-  var weights : Map[String, Float]  // tag -> weight vector
+  var seenTags : Map[String, Set[String]] = Map() // word -> possible tags
+  var weights : Map[String, Array[Int]] = Map() // tag -> weight vector
 
   def train(trainFile: String): Unit = {
     val trainSamples = Source.fromFile(trainFile).getLines.map(_.split("\t"))  // iterator of tuples (word, tag)
@@ -16,8 +21,7 @@ abstract class PosTagger {
     var tag = ""
 
     for (tupleList <- trainSamples.sliding(2,1)) {  // TODO: input file must also start with empty line
-      if (tupleList(1).sameElements(Array(""))) {}  // if/else used to work like java's continue - end of sentence
-      else {
+      if (!tupleList(1).sameElements(Array(""))) {  // if used to work like java's continue - end of sentence {
         if (tupleList(0).sameElements(Array(""))) {
           prevWord = ""
           prevTag = ""
@@ -35,9 +39,10 @@ abstract class PosTagger {
         seenTags += (word -> tagsForWord)
 
         // generate feature vector and add it up to the vector stored for this tag
+        // TODO: the next lines could surely be done in a fancy functional way
         var fVec = getFeatureVec(prevWord, prevTag, word)
         if (weights.contains(tag)) {
-          val prevWeights = weights.get(tag)
+          val prevWeights = weights(tag)
           weights += (tag -> prevWeights.zip(fVec).map { case (x, y) => x + y } ) // element-wise addition of vectors
         }
         else {
@@ -46,14 +51,26 @@ abstract class PosTagger {
       }
     }
     // TODO: normalize weights - dividing by the number of occurrences of the tag might be a good idea...
+    // values of weights are floats then --> weights = Map[String, Array[Float]]
   }
 
   def getFeatureVec(prevWord : String, prevTag : String, word : String) : Array[Int]
 
   def load(loadFile : String): Unit = ???  // TODO
+    // val stream = new FileInputStream(loadFile)
+    // val json = try {  parse(stream) } finally { stream.close() }
+    //or
+    // val json = parse(Source.fromFile(loadFile).getLines.mkString)
 
-  def save(saveFile : String): Unit = ???  // TODO
+  def save(saveFile : String): Unit = {
+    val json = ("weights" -> this.weights.mapValues(_.toList)) ~ ("seenTags" -> this.seenTags)
+    new PrintWriter(saveFile) { write(pretty(render(json))); close() }
+  }
 
-  def tag(words : Array[String]): Array[String] = ??? // TODO
+  def tag(words : Array[String]): Array[String] = ???  // TODO
 
+}
+
+trait FeatureExtractor {
+  def getFeatureVec(prevWord : String, prevTag : String, word : String) : Array[Int]
 }
