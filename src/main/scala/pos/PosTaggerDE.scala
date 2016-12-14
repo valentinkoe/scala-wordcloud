@@ -35,9 +35,24 @@ trait FeatureExtractorDE extends FeatureExtractor {
   )
   private val features = featureList.map(x => x -> featureList.indexOf(x)).toMap
   private val numFeatures = features.size
+  private val wordEndsList: List[String] =
+    List("heit",
+        "keit",
+        "ung",
+        "se",
+        "st",
+        "en",
+        "er",
+        "es",
+        "et",
+        "e",
+        "s"
+        )
 
-  override def getFeatureVec(prevWord: String, prevTag: String, word: String): Array[Int] = {
-    val featureVec = Array.fill[Int](numFeatures)(-1)
+
+  override def getFeatureVec(prevWord: String, prevTag: String, word: String, train: Boolean): Array[Int] = {
+
+    val featureVec = if (train) Array.fill[Int](numFeatures)(-1) else Array.fill[Int](numFeatures)(0)
 
     // TODO: order feature checks by expected frequency of their real world occurrence, to avoid some of them
     // TODO: evaluate current and add more features
@@ -64,22 +79,15 @@ trait FeatureExtractorDE extends FeatureExtractor {
     else if (word.length == 5) featureVec(features("wordLength5")) = 1
     else featureVec(features("wordLengthLong")) = 1
     // end characters
-    if (word.endsWith("e")) featureVec(features("endsWithE")) = 1
-    else if (word.endsWith("en")) featureVec(features("endsWithEN")) = 1
-    else if (word.endsWith("er")) featureVec(features("endsWithER")) = 1
-    else if (word.endsWith("es")) featureVec(features("endsWithES")) = 1
-    else if (word.endsWith("et")) featureVec(features("endsWithET")) = 1
-    else if (word.endsWith("s")) featureVec(features("endsWithS")) = 1  // TODO: competes with endsWithES - resolve?
-    else if (word.endsWith("st")) featureVec(features("endsWithST")) = 1
-    else if (word.endsWith("se")) featureVec(features("endsWithSE")) = 1
-    else if (word.endsWith("ung")) featureVec(features("endsWithUNG")) = 1
-    else if (word.endsWith("keit")) featureVec(features("endsWithKEIT")) = 1
-    else if (word.endsWith("heit")) featureVec(features("endsWithHEIT")) = 1
+
+    for (ending <- wordEndsList if word.endsWith(ending)) (
+        featureVec(features("endsWith" + ending.toUpperCase)) = 1
+        )
+
     // start characters
     if (word(0).isUpper) featureVec(features("startsWithCapital")) = 1
     if (word.toLowerCase.startsWith("ge")) featureVec(features("startsWithGE")) = 1
 
     featureVec
-  }
-
-}
+    }
+ }

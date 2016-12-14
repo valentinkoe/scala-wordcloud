@@ -42,7 +42,7 @@ abstract class PosTagger () {
 
         // generate feature vector and add it up to the vector stored for this tag
         // TODO: the next lines could surely be done in a fancy functional way
-        var fVec = getFeatureVec(prevWord, prevTag, word)
+        var fVec = getFeatureVec(prevWord, prevTag, word, true)
         if (weights.contains(tag)) {
           val prevWeights = weights(tag)
           weights += tag -> prevWeights.zip(fVec).map{case (x, y) => x+y} // element-wise addition of vectors
@@ -56,7 +56,7 @@ abstract class PosTagger () {
     // values of weights are floats then --> weights = Map[String, Array[Float]]
   }
 
-  def getFeatureVec(prevWord : String, prevTag : String, word : String) : Array[Int]
+  def getFeatureVec(prevWord : String, prevTag : String, word : String, train: Boolean) : Array[Int]
 
   def load(loadFile : String): Unit = ???  // TODO
     // val stream = new FileInputStream(loadFile)
@@ -90,7 +90,7 @@ abstract class PosTagger () {
         tags = tags :+ possibleTags.head
       }
       else {
-        val featVec = getFeatureVec(prevWord, tags.last, word)
+        val featVec = getFeatureVec(prevWord, tags.last, word, false)
         var maxSim = Float.NegativeInfinity
         var bestTag = "NN"
         for (pTag <- possibleTags) {
@@ -109,5 +109,5 @@ abstract class PosTagger () {
 }
 
 trait FeatureExtractor {
-  def getFeatureVec(prevWord : String, prevTag : String, word : String) : Array[Int]
+  def getFeatureVec(prevWord : String, prevTag : String, word : String, train : Boolean) : Array[Int]
 }
