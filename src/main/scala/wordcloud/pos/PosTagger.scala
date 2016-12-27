@@ -1,12 +1,9 @@
 package wordcloud.pos
 
-import java.io.PrintWriter
-import org.json4s.JsonDSL._
-import org.json4s.jackson.JsonMethods._
-
 import wordcloud.utils.corpus.CorpusReader
 
-abstract class PosTagger () {
+@SerialVersionUID(123L)
+abstract class PosTagger extends Serializable () {
 
   var tagCounts : Map[String, Int] = Map().withDefaultValue(0)  // tag -> count
   var seenTags : Map[String, Set[String]] = Map().withDefaultValue(Set())  // word -> possible tags
@@ -69,11 +66,4 @@ abstract class PosTagger () {
     }
     tags.tail
   }
-
-  def save(saveFile : String): Unit = {
-    val json = ("weights" -> this.weights.mapValues(_.toList)) ~ ("seenTags" -> this.seenTags)
-    new PrintWriter(saveFile) { write(pretty(render(json))); close() }
-  }
-
-  def load(loadFile : String): Unit = ???  // TODO
 }

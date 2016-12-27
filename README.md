@@ -17,3 +17,17 @@ example:
     // possible result: Array[String] = Array(PPER, VVFIN, NN, ADV, $.)
 
 Note that `tag()` tags *one* tokenized sentence (array of tokens).
+
+Saving and loading a tagger is easy:
+
+    import java.io._
+    
+    val outp = new ObjectOutputStream(new FileOutputStream("saved_tagger"))
+    outp.writeObject(tagger)
+    outp.close()
+    
+    val inp = new ObjectInputStream(new FileInputStream("saved_tagger"))
+    val tagger = inp.readObject.asInstanceOf[wordcloud.pos.PosTagger]
+    inp.close()
+    
+    
