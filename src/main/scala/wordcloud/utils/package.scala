@@ -1,5 +1,7 @@
 package wordcloud
 
+import scala.io.Source
+
 package object utils {
 
   /**
@@ -19,5 +21,10 @@ package object utils {
         nextList
       }
     }.withFilter(x => x.nonEmpty)
+
+  def getAbbrevs(abbrevFile: String): Set[String] = {
+    Source.fromFile("src/main/resources/abbreviations_de")
+      .getLines().filter(_ != "").filter(_(0) != '#').toSet
+  }
 
 }
