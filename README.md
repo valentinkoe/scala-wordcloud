@@ -2,6 +2,19 @@
 
 A very simple yet advanced wordcloud with supplementary NLP components.
 
+### Tokenization
+
+The `tokenize` package supplies classes for sentence splitting and
+tokenization. The used algorithms apply some heuristics to achieve
+relative good results.
+
+example:
+
+    import scala.io.Source
+    
+    val tokenizer = new wordcloud.pos.TokenizerDE()
+    val tokenizedSents = tokenizer.tokenizedSents(Source.fromFile("file"))
+
 ### Part of Speech Tagging
 
 The package `pos` supplies classes for POS tagging with a

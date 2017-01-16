@@ -1,6 +1,8 @@
 package wordcloud
 
+import scala.collection.mutable.ListBuffer
 import scala.io.Source
+import scala.util.matching.Regex
 
 package object utils {
 
@@ -12,19 +14,24 @@ package object utils {
     * @tparam T type of iterated items
     * @return iterator of lists
     */
-  def iterSplitAt[T](iter: Iterator[T], p: T => Boolean): Iterator[List[T]] =
+  def iterSplitAt[T](iter: Iterator[T], p: T => Boolean, keepSplitVals:Boolean = false): Iterator[List[T]] =
     new Iterator[List[T]] {
-      def hasNext = iter.hasNext
+      val nextList = new ListBuffer[T]
+      def hasNext() = iter.hasNext
       def next = {
-        val nextList = iter.takeWhile(!p(_)).toList
-        iter.dropWhile(p)
-        nextList
+        var noMatch = true
+        while (noMatch && iter.hasNext) {
+          val n = iter.next
+          if (p(n)) {
+            noMatch = false
+            if (keepSplitVals) nextList += n
+          }
+          else nextList += n
+        }
+        val nl = nextList.toList
+        nextList.clear()
+        nl
       }
-    }.withFilter(x => x.nonEmpty)
-
-  def getAbbrevs(abbrevFile: String): Set[String] = {
-    Source.fromFile("src/main/resources/abbreviations_de")
-      .getLines().filter(_ != "").filter(_(0) != '#').toSet
-  }
+    }.withFilter(_.nonEmpty)
 
 }
