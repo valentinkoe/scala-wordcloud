@@ -1,8 +1,8 @@
 package wordcloud.pos
 
-trait FeatureExtractorDE {
+trait FeatureExtractorDE extends FeatureExtractor {
 
-  private val featureList : List[String] =
+  val featureList : List[String] =
     List("beginningOfSentence",
       "prevWordLengthShort",
       "prevWordLengthMiddle",
@@ -31,7 +31,8 @@ trait FeatureExtractorDE {
       "startsWithCapital",
       "startsWithGE"
     )
-  private val suffixList: List[String] =
+
+  val suffixList: List[String] =
     List("heit",
       "keit",
       "ung",
@@ -44,9 +45,9 @@ trait FeatureExtractorDE {
       "e",
       "s"
     )
-  private val features = featureList.map(x => x -> featureList.indexOf(x)).toMap
-  private val numFeatures = features.size
 
+  val features = featureList.map(x => x -> featureList.indexOf(x)).toMap
+  val numFeatures = features.size
 
   def getFeatureVec(prevWord: String, prevTag: String, word: String, train: Boolean) : Array[Float] = {
 
