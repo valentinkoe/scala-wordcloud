@@ -1,8 +1,6 @@
 package wordcloud
 
 import scala.collection.mutable.ListBuffer
-import scala.io.Source
-import scala.util.matching.Regex
 
 package object utils {
 

@@ -1,15 +1,15 @@
 package wordcloud.utils.corpus
 
-import wordcloud.utils.Token
+import wordcloud.utils.AnnotatedToken
 
 trait LineReaderConll {
-  def lineToToken(line : String): Token = {
+  def lineToToken(line : String): AnnotatedToken = {
     if (line == "") {
-      Token("", "", "EOS", "")
+      AnnotatedToken("", "", "EOS", "")
     }
     else {
       val split = line.split("\t")
-      Token(split(1), split(2), split(4), split(10))
+      AnnotatedToken(split(1), split(2), split(4), split(10))
     }
   }
 }

@@ -6,15 +6,15 @@ import scala.io.Source
 
 abstract class CorpusReader(corpusFile: String) {
 
-  def lineToToken(line : String): Token
+  def lineToToken(line : String): AnnotatedToken
 
-  def readTokens(): Iterator[Token] = {
+  def readTokens(): Iterator[AnnotatedToken] = {
     val lines = Source.fromFile(corpusFile).getLines()
     lines.map(x => lineToToken(x))
   }
 
-  def readSentences(): Iterator[List[Token]] = {
-    iterSplitAt(readTokens(), (x: Token) => x == Token("", "", "EOS", ""))
+  def readSentences(): Iterator[List[AnnotatedToken]] = {
+    iterSplitAt(readTokens(), (x: AnnotatedToken) => x == AnnotatedToken("", "", "EOS", ""))
   }
 
 }

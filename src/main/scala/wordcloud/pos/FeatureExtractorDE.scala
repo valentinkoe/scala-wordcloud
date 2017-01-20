@@ -2,82 +2,33 @@ package wordcloud.pos
 
 trait FeatureExtractorDE extends FeatureExtractor {
 
-  val featureList : List[String] =
-    List("beginningOfSentence",
-      "prevWordLengthShort",
-      "prevWordLengthMiddle",
-      "prevWordLengthLong",
-      "prevTagArticle",
-      "prevTagNoun",
-      "prevTagVerb",
-      "prevTagAdjective",
-      "prevTagOther",
-      "wordLengthShort",
-      "wordLength3",
-      "wordLength4",
-      "wordLength5",
-      "wordLengthLong",
-      "endsWithE",
-      "endsWithEN",
-      "endsWithER",
-      "endsWithES",
-      "endsWithET",
-      "endsWithS",
-      "endsWithST",
-      "endsWithSE",
-      "endsWithUNG",
-      "endsWithKEIT",
-      "endsWithHEIT",
-      "startsWithCapital",
-      "startsWithGE"
-    )
-
-  val suffixList: List[String] =
-    List("heit",
-      "keit",
-      "ung",
-      "se",
-      "st",
-      "en",
-      "er",
-      "es",
-      "et",
-      "e",
-      "s"
-    )
-
-  val features = featureList.map(x => x -> featureList.indexOf(x)).toMap
-  val numFeatures = features.size
-
-  def getFeatureVec(prevWord: String, prevTag: String, word: String, train: Boolean) : Array[Float] = {
-
-    val featureVec = if (train) Array.fill[Float](numFeatures)(-1) else Array.fill[Float](numFeatures)(0)
-
-    if (prevTag == BOS) featureVec(features("beginningOfSentence")) = 1
-    else {
-      if (prevWord.length < 3) featureVec(features("prevWordLengthShort")) = 1
-      else if (prevWord.length < 6) featureVec(features("prevWordLengthMiddle")) = 1
-      else featureVec(features("prevWordLengthLong")) = 1
-
-      if (prevWord.startsWith("N")) featureVec(features("prevTagNoun")) = 1
-      else if (prevWord.startsWith("V")) featureVec(features("prevTagVerb")) = 1
-      else if (prevWord.startsWith("ADJ")) featureVec(features("prevTagAdjective")) = 1
-      else featureVec(features("prevTagOther")) = 1
-    }
-
-    if (word.length < 3) featureVec(features("wordLengthShort")) = 1
-    else if (word.length == 3) featureVec(features("wordLength3")) = 1
-    else if (word.length == 4) featureVec(features("wordLength4")) = 1
-    else if (word.length == 5) featureVec(features("wordLength5")) = 1
-    else featureVec(features("wordLengthLong")) = 1
-
-    for (suffix <- suffixList if word.endsWith(suffix)) {
-      featureVec(features("endsWith" + suffix.toUpperCase)) = 1
-    }
-
-    if (word(0).isUpper) featureVec(features("startsWithCapital")) = 1
-    if (word.toLowerCase.startsWith("ge")) featureVec(features("startsWithGE")) = 1
-
-    featureVec
-  }
+  // tuples should be: prevWord, prevTag, word
+  override val featureFuncs: List[ContextInfo => Float] = List(
+    x => if (x.prevTag == BOS) 1 else 0,  // beginning of sentence
+    x => if (x.prevWord.length <= 3) 1 else 0,
+    x => if (x.prevWord.length > 3 &&  x.prevWord.length < 6) 1 else 0,
+    x => if (x.prevWord.length >= 6) 1 else 0,
+    x => if (x.prevTag == "ART") 1 else 0,
+    x => if (x.prevTag.startsWith("N")) 1 else 0,
+    x => if (x.prevTag.startsWith("V")) 1 else 0,
+    x => if (x.prevTag.startsWith("ADJ")) 1 else 0,
+    x => if (x.word.length <= 3) 1 else 0,
+    x => if (x.word.length == 4) 1 else 0,
+    x => if (x.word.length == 5) 1 else 0,
+    x => if (x.word.length == 6) 1 else 0,
+    x => if (x.word.length < 6) 1 else 0,
+    x => if (x.word.endsWith("e")) 1 else 0,
+    x => if (x.word.endsWith("en")) 1 else 0,
+    x => if (x.word.endsWith("es")) 1 else 0,
+    x => if (x.word.endsWith("er")) 1 else 0,
+    x => if (x.word.endsWith("et")) 1 else 0,
+    x => if (x.word.endsWith("st")) 1 else 0,
+    x => if (x.word.endsWith("ung")) 1 else 0,
+    x => if (x.word.endsWith("heit")) 1 else 0,
+    x => if (x.word.endsWith("keit")) 1 else 0,
+    x => if (x.word.startsWith("ge")) 1 else 0,
+    x => if (x.word(0).isUpper) 1 else 0,
+    x => if (x.word.forall(Character.isLetter)) 1 else 0,
+    x => if (x.word.forall(Character.isDigit)) 1 else 0
+  )
 }

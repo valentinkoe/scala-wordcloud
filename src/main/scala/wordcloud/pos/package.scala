@@ -1,10 +1,10 @@
 package wordcloud
 
-import wordcloud.utils.Token
+import wordcloud.utils.AnnotatedToken
 
 package object pos {
   val BOS = "BOS"
   val EOS = "EOS"
-  val BosToken = Token("", "", "BOS", "")
-  val EosToken = Token("", "", "EOS", "")
+  val BosToken = AnnotatedToken("", "", "BOS", "")
+  val EosToken = AnnotatedToken("", "", "EOS", "")
 }
