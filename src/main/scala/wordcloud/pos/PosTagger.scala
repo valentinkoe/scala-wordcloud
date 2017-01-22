@@ -18,7 +18,7 @@ abstract class PosTagger {
 
   val defaultTag: String
 
-  def getFeatureVec(feat: ContextInfo, train: Boolean): List[Float]
+  def getFeatureVec(feat: ContextInfo, train: Boolean): Array[Float]
 
   def train(corpus: CorpusReader): Unit = {
 
