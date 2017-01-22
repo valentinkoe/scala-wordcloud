@@ -1,11 +1,14 @@
 package wordcloud.pos
 
+import java.io.PrintWriter
+import scala.collection.mutable.ListBuffer
+import org.json4s.jackson.Json
+import org.json4s.DefaultFormats
+
 import wordcloud.utils.corpus.CorpusReader
 
-import scala.collection.mutable.ListBuffer
 
-@SerialVersionUID(123L)
-abstract class PosTagger extends Serializable () {
+abstract class PosTagger {
 
   var tagCounts: Map[String, Int] = Map().withDefaultValue(0)
   // tag -> count
@@ -15,7 +18,7 @@ abstract class PosTagger extends Serializable () {
 
   val defaultTag: String
 
-  def getFeatureVec(feat: ContextInfo, train: Boolean): Array[Float]
+  def getFeatureVec(feat: ContextInfo, train: Boolean): List[Float]
 
   def train(corpus: CorpusReader): Unit = {
 
@@ -100,4 +103,8 @@ abstract class PosTagger extends Serializable () {
       }
     }
 
+  def save(filename: String): Unit = {
+    val jString = Json(DefaultFormats).write(Map[String, Any]("weights" -> weights, "seenTags" -> seenTags))
+    new PrintWriter(filename) {write(jString); close}
+  }
 }

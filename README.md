@@ -30,17 +30,11 @@ example:
     // possible result: Array[String] = Array(PPER, VVFIN, NN, ADV, $.)
 
 Note that `tag()` tags *one* tokenized sentence (array of tokens).
+Repeated calls of the `train` function (currently) yields unpredictable
+behavior.
 
 Saving and loading a tagger is easy:
 
-    import java.io._
+    tagger.save("tagger.json")
     
-    val outp = new ObjectOutputStream(new FileOutputStream("saved_tagger"))
-    outp.writeObject(tagger)
-    outp.close()
-    
-    val inp = new ObjectInputStream(new FileInputStream("saved_tagger"))
-    val tagger = inp.readObject.asInstanceOf[wordcloud.pos.PosTagger]
-    inp.close()
-    
-    
+    val loadedTagger = PosTaggerDE.load("tagger.json")
