@@ -38,3 +38,12 @@ Saving and loading a tagger is easy:
     tagger.save("tagger.json")
     
     val loadedTagger = PosTaggerDE.load("tagger.json")
+
+### http api
+
+Call `sbt run` to start the service, then get some results,
+e.g. with `curl`:
+
+    curl --data "{\"data\": \"Das ist ein Test.\"}" http://localhost:8080/getChunkCounts
+
+Requires a trained `PosTaggerDE` saved as `tagger.json`

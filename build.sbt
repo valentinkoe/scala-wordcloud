@@ -7,7 +7,8 @@ libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.5.0"
 libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.6.4"
 
 libraryDependencies ++= Seq(
-  "org.http4s" %% "http4s-blaze-server" % "0.15.3a",
-  "org.http4s" %% "http4s-dsl"          % "0.15.3a",
-  "org.http4s" %% "http4s-argonaut"     % "0.15.3a"
+  "org.http4s" %% "http4s-blaze-server"     % "0.15.3a",
+  "org.http4s" %% "http4s-dsl"              % "0.15.3a",
+  "org.http4s" %% "http4s-argonaut"         % "0.15.3a",
+  "org.http4s" %% "http4s-json4s-jackson"   % "0.15.3a"
 )
