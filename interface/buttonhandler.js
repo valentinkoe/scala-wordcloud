@@ -2,43 +2,51 @@
 
   document.getElementById("Submit").onclick = function(event) {
     event.preventDefault();
-      var file = $("#input_file").val();
       var text = $("#input_text").val();
+	  console.log(text);
+      return false;
+  };
+  
+    function handleFileSelect(evt) {
+    var files = evt.target.files; // FileList object
+    //Looping over files
+    for (var i = 0, f; f = files[i]; i++) {
+      var reader = new FileReader();
+      reader.onload = (function(theFile) {
+        return function(e) {
+       	  $("#loading").hide();
+          //TODO plug request here
+		  console.log(e.target.result)
+        };
+      })(f);
 
-      if (file!=""){
-        $.get(file, function(data) {
-          console.log(data)
-        }, 'text');
-      }
-
-      if (file != "" && text !="insert text or url"){
-         console.log(file);
-         console.log(text);
-         alert('Please enter only one type of text/url or file');
-         return false;
-      }
-
-      if ($('#cb_NC').checked){
+      // Read in the image file as a data URL.
+      reader.readAsText(f);
+      $("#loading").show();
+	  console.log("started text read")
+    }
+  }
+  
+  document.getElementById('input_file').addEventListener('change', handleFileSelect, false);
+  
+  function makeRequest(url) {
+	  
+	  if ($('#cb_NC').checked){
         var cb_NC = 'True';}
       if ($('#cb_ADJ').checked){
         var cb_ADJ = 'True';}
 
       if ($('#lang_DE').checked) {
-      //TODO put request hook here
+		var lang = "DE";}
+      else if ($('#lang_EN').checked) {
+		var lang = "EN"
           }
-      if ($('#lang_EN').checked) {
-      //TODO put request hook here
-          }
-      return false;
-  };
-
-  function makeRequest(url) {
+		  
     // This function starts the request
-    // also shows the loading gif and hides the current table
     // it will be newly shown when the request finishes
+	
     httpRequest = new XMLHttpRequest();
     $("#loading").show();
-    $(".freq_table").hide()
     if (!httpRequest) {
       alert('Giving up :( Cannot create an XMLHTTP instance');
       return false;
@@ -58,7 +66,7 @@
           var Text = JSON.parse(httpRequest.responseText);
           if (Text[0] == undefined){
             alert('The request did not return a result')}
-          createTable(Text);}
+          //TODO hook result function here
       else {
           alert('There was a problem with the request.');
       }
