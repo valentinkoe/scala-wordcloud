@@ -1,10 +1,14 @@
 (function() {
 
   document.getElementById("Submit").onclick = function(event) {
-    event.preventDefault();
+	event.preventDefault();
+	if ($("#input_text").prop("defaultValue") == $("#input_text").val()){
+		alert("Please enter another text than the default text")
+	} else {  
       var text = $("#input_text").val();
-	  console.log(text);
+	  addText(text);
       return false;
+	}
   };
   
     function handleFileSelect(evt) {
@@ -43,6 +47,7 @@
           }
 		  
     // This function starts the request
+    // also shows the loading gif and hides the current table
     // it will be newly shown when the request finishes
 	
     httpRequest = new XMLHttpRequest();
@@ -71,6 +76,25 @@
           alert('There was a problem with the request.');
       }
     }
+  }
+}
+
+  function addText(passedText){
+	  if ($("#" + passedText).length) {
+		 var fontSize = parseInt($("#" + passedText).css("font-size"));
+		 if (isNaN(fontSize)){
+			 fontSize = 10;
+			}
+	     console.log(fontSize);
+		 ($("#" + passedText)).css("font-size", fontSize + 20);
+		 }
+	   else {
+		console.log("does not exist")
+		jQuery('<div/>', {
+		id: passedText,
+		text: passedText,		
+	    }).appendTo('.outer-container');
+	  }
   }
 
 }
