@@ -86,7 +86,10 @@
 			 fontSize = 10;
 			}
 	     console.log(fontSize);
-		 ($("#" + passedText)).css("font-size", fontSize + 20);
+		  ($("#" + passedText)).animate({
+                        fontSize: fontSize + 20
+                    }, 500);
+		 //($("#" + passedText)).css("font-size", fontSize + 20);
 		 }
 	   else {
 		console.log("does not exist")
@@ -100,3 +103,4 @@
 }
 
 )();
+
