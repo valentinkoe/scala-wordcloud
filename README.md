@@ -39,11 +39,13 @@ Saving and loading a tagger is easy:
     
     val loadedTagger = PosTaggerDE.load("tagger.json")
 
-### http api
+The current german tagger achieves accuracy values of about 80% on
+average. Always assigning the most common tag yields ~20% accuracy. 
 
-Call `sbt run` to start the service, then get some results,
-e.g. with `curl`:
+### Chunking
 
-    curl --data "{\"data\": \"Das ist ein Test.\"}" http://localhost:8080/getChunkCounts
+... to follow
 
-Requires a trained `PosTaggerDE` saved as `tagger.json`
+### web app
+
+... to follow

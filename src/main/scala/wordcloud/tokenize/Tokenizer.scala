@@ -61,3 +61,7 @@ abstract class Tokenizer {
   def tokenizedSents(text: Iterator[Char]): Iterator[List[String]] = splitToSents(text).map(tokenizeSent)
 
 }
+
+class TokenizerDE extends Tokenizer with AbbreviationsDE
+
+class TokenizerEN extends Tokenizer with AbbreviationsEN

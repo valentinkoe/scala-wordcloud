@@ -2,7 +2,7 @@ package wordcloud.pos
 
 import wordcloud.utils.corpus.BOS_TOKEN
 
-class PosTaggerDE extends PosTagger {
+class PosTaggerEN extends PosTagger {
 
   override val defaultTag: String = "NN"
 
@@ -11,28 +11,19 @@ class PosTaggerDE extends PosTagger {
     x => if (x.prevToken.length <= 3) 1 else 0,
     x => if (x.prevToken.length > 3 &&  x.prevToken.length < 6) 1 else 0,
     x => if (x.prevToken.length >= 6) 1 else 0,
-    x => if (x.prevToken.pos == "ART") 1 else 0,
-    x => if (x.prevToken.pos == "PTKA") 1 else 0,
-    x => if (x.prevToken.pos == "PTKZU") 1 else 0,
-    x => if (x.prevToken.pos == "TRUNC") 1 else 0,
+    x => if (x.prevToken.pos == "DT") 1 else 0,
+    x => if (x.prevToken.pos == "TO") 1 else 0,
     x => if (x.prevToken.pos.startsWith("N")) 1 else 0,
+    x => if (x.prevToken.pos.startsWith("J")) 1 else 0,
     x => if (x.prevToken.pos.startsWith("V")) 1 else 0,
-    x => if (x.prevToken.pos.startsWith("ADJ")) 1 else 0,
     x => if (x.word.length <= 3) 1 else 0,
     x => if (x.word.length == 4) 1 else 0,
     x => if (x.word.length == 5) 1 else 0,
     x => if (x.word.length == 6) 1 else 0,
     x => if (x.word.length < 6) 1 else 0,
-    x => if (x.word.endsWith("e")) 1 else 0,
-    x => if (x.word.endsWith("en")) 1 else 0,
-    x => if (x.word.endsWith("es")) 1 else 0,
-    x => if (x.word.endsWith("er")) 1 else 0,
-    x => if (x.word.endsWith("et")) 1 else 0,
-    x => if (x.word.endsWith("st")) 1 else 0,
-    x => if (x.word.endsWith("ung")) 1 else 0,
-    x => if (x.word.endsWith("heit")) 1 else 0,
-    x => if (x.word.endsWith("keit")) 1 else 0,
-    x => if (x.word.startsWith("ge")) 1 else 0,
+    x => if (x.word.endsWith("s")) 1 else 0,
+    x => if (x.word.endsWith("ed")) 1 else 0,
+    x => if (x.word.endsWith("ing")) 1 else 0,
     x => if (x.word(0).isUpper) 1 else 0,
     x => if (x.word.forall(Character.isLetter)) 1 else 0,
     x => if (x.word.forall(Character.isDigit)) 1 else 0
@@ -40,11 +31,11 @@ class PosTaggerDE extends PosTagger {
 
 }
 
-object PosTaggerDE {
+object PosTaggerEN {
 
   def load(filename: String): PosTagger = {
     val (loadedWeights, loadedSeenTags) = PosTagger.loadTaggerData(filename)
-    new PosTaggerDE() {
+    new PosTaggerEN() {
       weights = loadedWeights
       seenTags = loadedSeenTags
     }

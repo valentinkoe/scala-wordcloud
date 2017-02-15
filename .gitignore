@@ -1,4 +1,6 @@
 
+src/main/resources/corpora
+
 # Scala
 *.class
 

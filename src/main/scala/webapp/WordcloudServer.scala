@@ -1,10 +1,10 @@
-package wordcloud.http
+package webapp
 
 import org.http4s.server.blaze.BlazeBuilder
 
-object BlazeServer extends App {
+object WordcloudServer extends App {
   BlazeBuilder.bindHttp(8080)
-    .mountService(WordcloudService.service, "/")
+    .mountService(Routes.service, "/")
     .run
     .awaitShutdown()
 }

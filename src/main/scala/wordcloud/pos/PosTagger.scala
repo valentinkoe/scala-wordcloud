@@ -1,11 +1,16 @@
 package wordcloud.pos
 
 import java.io.PrintWriter
+
 import scala.collection.mutable.ListBuffer
 import org.json4s.jackson.Json
 import org.json4s.DefaultFormats
-
+import org.json4s.jackson.JsonMethods._
+import wordcloud.utils.POSAnnotatedToken
+import wordcloud.utils.corpus.BOS_TOKEN
 import wordcloud.utils.corpus.CorpusReader
+
+import scala.io.Source
 
 
 abstract class PosTagger {
@@ -18,16 +23,22 @@ abstract class PosTagger {
 
   val defaultTag: String
 
-  def getFeatureVec(feat: ContextInfo, train: Boolean): Array[Float]
+  val featureFuncs: List[ContextInfo => Float]
+
+  def getFeatureVec(feat: ContextInfo, train: Boolean) : Array[Float] = {
+    var featFuncsApplied = featureFuncs.map(_(feat))
+    if (train) featFuncsApplied = featFuncsApplied.map(x => if (x == 0F) -1F else 1F)
+    featFuncsApplied.toArray
+  }
 
   def train(corpus: CorpusReader): Unit = {
 
-    for (sentence <- corpus.readSentences()) {
-      var prevToken = BosToken
+    for (sentence <- corpus.readPOSAnnotatedSentences()) {
+      var prevToken = BOS_TOKEN
       for (token <- sentence) {
-        seenTags += token.form -> (seenTags(token.form) + token.pos)
+        seenTags += token.word -> (seenTags(token.word) + token.pos)
         tagCounts += token.pos -> (tagCounts(token.pos) + 1)
-        val fVec = getFeatureVec(ContextInfo(prevToken.form, prevToken.pos, token.form), train = true)
+        val fVec = getFeatureVec(ContextInfo(prevToken, token.word), train = true)
         if (weights.contains(token.pos)) {
           weights += token.pos -> weights(token.pos).zip(fVec).map { case (x, y) => x + y }
         }
@@ -44,38 +55,10 @@ abstract class PosTagger {
     }
   }
 
-  def tag(words : List[String]): List[String] = {
-    var tags = new ListBuffer[String]
-    var prevWord = ""
-    var prevTag = BOS
-    for (word <- words) {
-      val possibleTags = seenTags.getOrElse(word, tagCounts.keys)
-      var bestTag = defaultTag
-      if (possibleTags.size == 1) {
-        bestTag = possibleTags.head
-      }
-      else {
-        val featVec = getFeatureVec(ContextInfo(prevWord, prevTag, word), train=false)
-        var maxSim = Float.NegativeInfinity
-        for (pTag <- possibleTags) {
-          val sim = featVec.zip(weights(pTag)).map{case (x, y) => x+y}.sum
-          if (sim > maxSim) {
-            maxSim = sim
-            bestTag = pTag
-          }
-        }
-      }
-      prevWord = word
-      prevTag = bestTag
-      tags += bestTag
-    }
-    tags.toList
-  }
+  def tagSent(words : List[String]): List[String] = tagSentIter(words.iterator).toList
 
-  def tagIter(words: Iterator[String]): Iterator[String] =
-    new Iterator[String] {
-      var prevWord = ""
-      var prevTag = BOS
+  def tagSentIter(words: Iterator[String]): Iterator[String] = new Iterator[String] {
+      var prevToken = BOS_TOKEN
 
       def hasNext = words.hasNext
 
@@ -86,25 +69,44 @@ abstract class PosTagger {
         if (possibleTags.size == 1) {
           bestTag = possibleTags.head
         }
-        else {
-          val featVec = getFeatureVec(ContextInfo(prevWord, prevTag, curWord), train = false)
-          var maxSim = Float.NegativeInfinity
-          for (pTag <- possibleTags) {
-            val sim = featVec.zip(weights(pTag)).map { case (x, y) => x + y }.sum
-            if (sim > maxSim) {
-              maxSim = sim
-              bestTag = pTag
-            }
-          }
+        else if (possibleTags.nonEmpty) {
+          val featVec = getFeatureVec(ContextInfo(prevToken, curWord), train=false)
+          val sims = possibleTags.map(x => (x, featVec.zip(weights(x)).map({ case (x, y) => x + y }).sum))
+          bestTag = sims.reduce((x, y) => if (x._2 > y._2) x else y)._1
         }
-        prevWord = curWord
-        prevTag = bestTag
+        prevToken = POSAnnotatedToken(curWord, bestTag)
         bestTag
       }
     }
 
   def save(filename: String): Unit = {
-    val jString = Json(DefaultFormats).write(Map[String, Any]("weights" -> weights, "seenTags" -> seenTags))
-    new PrintWriter(filename) {write(jString); close}
+    val jString = Json(DefaultFormats).writePretty(Map[String, Any]("weights" -> weights, "seenTags" -> seenTags))
+    new PrintWriter(filename) {write(jString); close()}
   }
+
+  def getAccuracy(corpus: CorpusReader): Double = {
+    var correct = 0.0
+    var total = 0.0
+    val predictedTagSeqs = corpus.readSentences().map(tagSent)
+    val goldTagSeqs = corpus.readPOSAnnotatedSentences().map(x => x.map(_.pos))
+    for ((predSeq, goldSeq) <- predictedTagSeqs.zip(goldTagSeqs)) {
+      for ((p, g) <- predSeq.zip(goldSeq)) {
+        if (p == g) correct += 1
+        total += 1
+      }
+    }
+    correct/total
+  }
+}
+
+object PosTagger {
+
+  def loadTaggerData(filename: String) = {
+    implicit val formats = DefaultFormats
+    val json = parse(Source.fromFile(filename).mkString)
+    val loadedWeights = (json \ "weights").extract[Map[String, Array[Float]]]
+    val loadedSeenTags = (json \ "seenTags").extract[Map[String, Set[String]]]
+    (loadedWeights, loadedSeenTags)
+  }
+
 }
