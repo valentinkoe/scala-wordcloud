@@ -18,7 +18,7 @@ h1{
     height: auto;
     margin: auto;
     visibility: hidden;
-    background-image:url('static/img/default.gif');
+    background-image:url('../img/default.gif');
 }
 
 div#loading{
@@ -29,7 +29,7 @@ div#loading{
     margin-right: auto;
     margin-top: 10px;
     display: none;
-    background: url('static/img/hex-loader-rotated.gif') no-repeat;
+    background: url('../img/hex-loader-rotated.gif') no-repeat;
     cursor: wait;
 }
 
@@ -38,7 +38,9 @@ form{
 }
 
 #tester{
-    width: auto;
-    height: auto;
-    background-image: url('static/img/hex-loader-rotated.gif');
+    display: block;
+    width: 80px;
+    height: 118px;
+    margin: auto;
+    background-image: url('../img/hex-loader-rotated.gif');
 }
