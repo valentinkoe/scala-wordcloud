@@ -33,8 +33,8 @@ class PosTaggerEN extends PosTagger {
 
 object PosTaggerEN {
 
-  def load(filename: String): PosTagger = {
-    val (loadedWeights, loadedSeenTags) = PosTagger.loadTaggerData(filename)
+  def load(resource: String): PosTagger = {
+    val (loadedWeights, loadedSeenTags) = PosTagger.loadTaggerData(resource)
     new PosTaggerEN() {
       weights = loadedWeights
       seenTags = loadedSeenTags

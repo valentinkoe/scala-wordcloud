@@ -101,9 +101,9 @@ abstract class PosTagger {
 
 object PosTagger {
 
-  def loadTaggerData(filename: String) = {
+  def loadTaggerData(resource: String) = {
     implicit val formats = DefaultFormats
-    val json = parse(Source.fromFile(filename).mkString)
+    val json = parse(Source.fromResource(resource).mkString)
     val loadedWeights = (json \ "weights").extract[Map[String, Array[Float]]]
     val loadedSeenTags = (json \ "seenTags").extract[Map[String, Set[String]]]
     (loadedWeights, loadedSeenTags)

@@ -1,39 +1,39 @@
 package webapp
 
-import java.util.concurrent.Executors
-
-import org.json4s._
 import org.http4s._
 import org.http4s.dsl._
-import org.http4s.json4s.jackson._
 import org.http4s.server.staticcontent
 import org.http4s.server.staticcontent.ResourceService.Config
-import org.http4s.server.websocket._
-import org.http4s.websocket.WebsocketBits._
+import scalaz.concurrent.Task
+import scalaz.stream.Process
+import scalaz.stream.io.toInputStream
+import wordcloud.Processing
 
-import scala.concurrent.duration._
-import scalaz.stream.{Exchange, Process, time}
-
+import scala.io.Source
 
 object Routes {
 
-  private implicit val scheduledEC = Executors.newScheduledThreadPool(4)
-
+  private def cachedResource(config: Config): HttpService = {
+    val cachedConfig = config.copy(cacheStrategy = staticcontent.MemoryCache())
+    staticcontent.resourceService(cachedConfig)
+  }
   // Get the static content
   private val static  = cachedResource(Config("/static", "/static"))
-  private val views   = cachedResource(Config("/pages", "/"))
+  private val pages   = cachedResource(Config("/pages", "/"))
 
-  //case class JData(data: String)
-
-  //implicit val formats = DefaultFormats
-  //implicit val jDataReader = new Reader[JData] {
-  //  def read(value: JValue): JData = value.extract[JData]
-  //}
-  //implicit val jDataDecoder = jsonOf[JData]
+  object LangQueryParamMatcher extends QueryParamDecoderMatcher[String]("lang")
+  object AdjQueryParamMatcher extends QueryParamDecoderMatcher[Boolean]("adj")
+  object NounQueryParamMatcher extends QueryParamDecoderMatcher[Boolean]("noun")
 
   val service: HttpService = HttpService {
 
-    // retriews static resources
+    case r @ POST -> Root / "tokens" :? LangQueryParamMatcher(lang)
+                                       +& AdjQueryParamMatcher(adj)
+                                       +& NounQueryParamMatcher(noun) =>
+      val inp = Source.fromInputStream(toInputStream(r.body), "UTF-8")
+      Ok(tokenStream(inp, lang, adj, noun))
+
+    // retrieves static resources
     case r @ GET -> _ if r.pathInfo.startsWith("/static") => static(r)
 
     // base route shows index.html
@@ -42,23 +42,18 @@ object Routes {
     // shows all html pages in pages
     case r @ GET -> _ =>
       val rr = if (r.pathInfo.contains('.')) r else r.withPathInfo(r.pathInfo + ".html")
-      views(rr)
-
-    // TODO
-    //case r @ GET -> Root / "websocket" =>
-    //  // Send a ping every second
-    //  val src = time.awakeEvery(1.seconds).map(d => Text("Delay -> " + d))
-    //  WS(Exchange(src, Process.halt))
-
-    //case req @ POST -> Root / "getChunkCounts" =>
-    //  req.as[JData].flatMap(x => Ok(Processing.getChunkCounts(x.data)))
-
+      pages(rr)
 
   }
 
-  private def cachedResource(config: Config): HttpService = {
-    val cachedConfig = config.copy(cacheStrategy = staticcontent.MemoryCache())
-    staticcontent.resourceService(cachedConfig)
+  def toStream[T](iter: Iterator[T]): Process[Nothing, T] = {
+    Process.unfold(iter) { it =>
+      if (it.hasNext) Some((it.next, it))
+      else None
+    }
   }
+
+  def tokenStream(text: Iterator[Char], lang: String, adj: Boolean=false, noun: Boolean=true): Process[Task, String] =
+    toStream(Processing.getTokens(text, lang, adj, noun))
 
 }
