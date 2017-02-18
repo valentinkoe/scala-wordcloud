@@ -1,23 +1,23 @@
 package wordcloud.pos
 
-import wordcloud.utils.corpus.BOS_TOKEN
+import wordcloud.utils.corpus.BOS_TAG
 
 class PosTaggerDE extends PosTagger {
 
   override val defaultTag: String = "NN"
 
   override val featureFuncs: List[ContextInfo => Float] = List(
-    x => if (x.prevToken == BOS_TOKEN) 1 else 0,  // beginning of sentence
-    x => if (x.prevToken.length <= 3) 1 else 0,
-    x => if (x.prevToken.length > 3 &&  x.prevToken.length < 6) 1 else 0,
-    x => if (x.prevToken.length >= 6) 1 else 0,
-    x => if (x.prevToken.pos == "ART") 1 else 0,
-    x => if (x.prevToken.pos == "PTKA") 1 else 0,
-    x => if (x.prevToken.pos == "PTKZU") 1 else 0,
-    x => if (x.prevToken.pos == "TRUNC") 1 else 0,
-    x => if (x.prevToken.pos.startsWith("N")) 1 else 0,
-    x => if (x.prevToken.pos.startsWith("V")) 1 else 0,
-    x => if (x.prevToken.pos.startsWith("ADJ")) 1 else 0,
+    x => if (x.prevTag == BOS_TAG) 1 else 0,  // beginning of sentence
+    x => if (x.prevWord.length <= 3) 1 else 0,
+    x => if (x.prevWord.length > 3 &&  x.prevWord.length < 6) 1 else 0,
+    x => if (x.prevWord.length >= 6) 1 else 0,
+    x => if (x.prevTag == "ART") 1 else 0,
+    x => if (x.prevTag == "PTKA") 1 else 0,
+    x => if (x.prevTag == "PTKZU") 1 else 0,
+    x => if (x.prevTag == "TRUNC") 1 else 0,
+    x => if (x.prevTag.startsWith("N")) 1 else 0,
+    x => if (x.prevTag.startsWith("V")) 1 else 0,
+    x => if (x.prevTag.startsWith("ADJ")) 1 else 0,
     x => if (x.word.length <= 3) 1 else 0,
     x => if (x.word.length == 4) 1 else 0,
     x => if (x.word.length == 5) 1 else 0,
@@ -42,8 +42,8 @@ class PosTaggerDE extends PosTagger {
 
 object PosTaggerDE {
 
-  def load(resource: String): PosTagger = {
-    val (loadedWeights, loadedSeenTags) = PosTagger.loadTaggerData(resource)
+  def load(taggerFile: String): PosTagger = {
+    val (loadedWeights, loadedSeenTags) = PosTagger.loadTaggerData(taggerFile)
     new PosTaggerDE() {
       weights = loadedWeights
       seenTags = loadedSeenTags

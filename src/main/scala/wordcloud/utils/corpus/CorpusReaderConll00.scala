@@ -1,7 +1,5 @@
 package wordcloud.utils.corpus
 
-import wordcloud.utils.POSAnnotatedToken
-
 class CorpusReaderConll00(corpusFile: String) extends CorpusReader(corpusFile) {
 
   override def lineToToken(line: String): String = line match {
@@ -9,10 +7,12 @@ class CorpusReaderConll00(corpusFile: String) extends CorpusReader(corpusFile) {
     case _ => line.split(" +")(0)
   }
 
-  def lineToPOSAnnotatedToken(line : String): POSAnnotatedToken = line match {
+  def lineToAnnotatedToken(line: String): AnnotatedToken = line match {
     case "" => EOS_TOKEN
-    case _ => {val split = line.split(" +")
-      POSAnnotatedToken(split(0), split(1))}
+    case _ =>
+      val split = line.split(" +")
+      if (split(2).endsWith("NP")) AnnotatedToken(split(0), split(1), IS_CHUNK)
+      else AnnotatedToken(split(0), split(1), NO_CHUNK)
   }
 
 }

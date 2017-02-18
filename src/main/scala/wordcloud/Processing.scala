@@ -11,32 +11,43 @@ import org.json4s.jackson.Json
 object Processing {
 
   lazy val tokenizerDE = new TokenizerDE
-  lazy val taggerDE = PosTaggerDE.load("trained_taggers/tagger_de.json")
+  lazy val taggerDE = PosTaggerDE.load("src/main/resources/trained_taggers/tagger_de.json")
 
   lazy val tokenizerEN = new TokenizerEN
-  lazy val taggerEN = PosTaggerEN.load("trained_taggers/tagger_en.json")
+  lazy val taggerEN = PosTaggerEN.load("src/main/resources/trained_taggers/tagger_en.json")
 
   // TODO: chunkers
 
   def getTokens(input: Iterator[Char], lang: String, adj: Boolean, noun: Boolean): Iterator[String] = {
 
+    if (!List("de", "en").contains(lang)) throw UnsupportedLanguageException(s"language not yet supported: $lang")
+
+    var tokenizer: Tokenizer = null
+    var tagger: PosTagger = null
+    var adjStart: String = null
+    var nounStart: String = null
+
     if (lang == "de") {
-      tokenizerDE.tokenizedSents(input)
-        .map(x => x.zip(taggerDE.tagSent(x)))
-        .flatten
-        .withFilter(x => if ((!adj && !noun) || (adj && x._2.startsWith("ADJ")) || (noun && x._2.startsWith("N"))) true else false)
-        .map(x => x._1)
+      tokenizer = tokenizerDE
+      tagger = taggerDE
+      adjStart = "ADJ"
+      nounStart = "N"
     }
     else if (lang == "en") {
-      tokenizerEN.tokenizedSents(input)
-        .map(x => x.zip(taggerEN.tagSent(x)))
-        .flatten
-        .withFilter(x => if ((!adj && !noun) || (adj && x._2.startsWith("JJ")) || (noun && x._2.startsWith("NN"))) true else false)
-        .map(x => x._1)
+      tokenizer = tokenizerEN
+      tagger = taggerEN
+      adjStart = "JJ"
+      nounStart = "NN"
     }
-    else {
-      throw UnsupportedLanguageException(s"language not yet supported: $language")
-    }
+
+    tokenizer.tokenizedSents(input)
+      .map(x => x.zip(tagger.tagSent(x)))
+      .flatten
+      .withFilter(x => if ((!adj && !noun)
+                            || (adj && x._2.startsWith(adjStart))
+                            || (noun && x._2.startsWith(nounStart))) true
+                        else false)
+      .map(x => x._1)
   }
 
 }
