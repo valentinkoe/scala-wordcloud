@@ -47,10 +47,18 @@ object PosTaggerDE {
     * unfortunately the feature extracting rules are not easily serializable
     * so we need to define the load function for each subclass separately
     */
-  def load(taggerFile: String) = new PosTaggerDE {
-    (weights, seenTags) = PosTagger.loadTaggerData(taggerFile)
+  def load(taggerFile: String) = {
+    val (loadedWeights, loadedSeenTags) = PosTagger.loadTaggerData(taggerFile)
+    new PosTaggerDE {
+      weights = loadedWeights
+      seenTags = loadedSeenTags
+    }
   }
-  def loadDefault = new PosTaggerDE {
-    (weights, seenTags) = PosTagger.loadTaggerDataFromResource(Source.fromResource("trained_classifiers/tagger_de.json"))
+  def loadDefault = {
+    val (loadedWeights, loadedSeenTags) = PosTagger.loadTaggerDataFromResource(Source.fromResource("trained_classifiers/tagger_de.json"))
+    new PosTaggerDE {
+      weights = loadedWeights
+      seenTags = loadedSeenTags
+    }
   }
 }
