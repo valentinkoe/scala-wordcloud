@@ -19,8 +19,9 @@
       reader.onload = (function(theFile) {
         return function(e) {
        	  $("#loading").hide();
+          makeRequest();
           //TODO plug request here
-		  console.log(e.target.result)
+		  //console.log(e.target.result)
         };
       })(f);
 
@@ -33,50 +34,41 @@
   
   document.getElementById('input_file').addEventListener('change', handleFileSelect, false);
   
-  function makeRequest(url) {
+  function makeRequest() {
 	  
+    var cb_NC = 'false';
+    var cb_ADJ = 'false';
 	  if ($('#cb_NC').checked){
-        var cb_NC = 'True';}
+        var cb_NC = 'true';}
       if ($('#cb_ADJ').checked){
-        var cb_ADJ = 'True';}
+        var cb_ADJ = 'true';}
 
       if ($('#lang_DE').checked) {
-		var lang = "DE";}
+		var lang = "de";}
       else if ($('#lang_EN').checked) {
-		var lang = "EN"
+		var lang = "en"
           }
-		  
-    // This function starts the request
-    // also shows the loading gif and hides the current table
-    // it will be newly shown when the request finishes
-	
-    httpRequest = new XMLHttpRequest();
-    $("#loading").show();
-    if (!httpRequest) {
-      alert('Giving up :( Cannot create an XMLHTTP instance');
-      return false;
-    }
-    httpRequest.onreadystatechange = alertContents;
-    httpRequest.open('GET', url);
-    httpRequest.send();
+    else{lang = "de"}
+
+//    var url = "http://localhost:8080/tokens?lang=" + lang + "&adj=" + cb_NC +
+//    "&noun=" + cb_NC
+
+  var urltwo = "/tokens?lang=de&adj=true&noun=false"
+  var url = "ws://127.0.0.1:8080/websocket?lang=de&adj=false&noun=false"
+//  var url = "http://localhost:8080/streaming"
+
+  var socket = new WebSocket(url)
+
+  socket.onopen = function (event) {
+    socket.send("test test test text text text")
+    console.log("socket opened")
+  };
+
+  socket.onmessage = function(event) {
+    console.log(event.data)
+//    addText(event.data)
   }
 
-  function alertContents() {
-    // Checks for the ready state and status of the respons
-      // throws an error if the .get response is != 200
-      // also starts the create_table function from static/js/createTable.js
-    if (httpRequest.readyState === XMLHttpRequest.DONE) {
-      if (httpRequest.status === 200) {
-          $("#loading").hide();
-          var Text = JSON.parse(httpRequest.responseText);
-          if (Text[0] == undefined){
-            alert('The request did not return a result')}
-          //TODO hook result function here
-      else {
-          alert('There was a problem with the request.');
-      }
-    }
-  }
 }
 
   function addText(passedText){
@@ -95,6 +87,7 @@
 		console.log("does not exist")
 		jQuery('<div/>', {
 		id: passedText,
+    class: "vertical-text",
 		text: passedText,		
 	    }).appendTo('.outer-container');
 	  }
