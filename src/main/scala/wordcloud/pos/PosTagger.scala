@@ -1,31 +1,30 @@
 package wordcloud.pos
 
 import java.io.PrintWriter
-import scala.io.Source
 
+import scala.io.Source
 import org.json4s.jackson.Json
 import org.json4s.DefaultFormats
 import org.json4s.jackson.JsonMethods._
-
-import wordcloud.utils.EqualPair
+import wordcloud.utils.{dotProduct, EqualPair}
 import wordcloud.utils.corpus._
 
 
 abstract class PosTagger {
 
-  var tagCounts: Map[String, Int] = Map().withDefaultValue(0)
-  // tag -> count
-  var seenTags: Map[String, Set[String]] = Map().withDefaultValue(Set())
-  // word -> possible tags
-  var weights: Map[String, Array[Float]] = Map() // tag -> weight vector
+  private var tagCounts: Map[String, Int] = Map().withDefaultValue(0)
+  // count how often a tag was observed during trining
+  protected var seenTags: Map[String, Set[String]] = Map().withDefaultValue(Set())
+  // store information about which word was seen
+  protected var weights: Map[String, Array[Double]] = Map() // tag -> weight vector
 
-  val defaultTag: String
+  protected val defaultTag: String  // the default tag to assign if no other tag could be predicted
 
-  val featureFuncs: List[ContextInfo => Float]
+  protected val featureFuncs: List[ContextInfo => Double]  // feature extracting functions
 
-  def getFeatureVec(feat: ContextInfo, train: Boolean): Array[Float] = {
+  private def getFeatureVec(feat: ContextInfo, train: Boolean): Array[Double] = {
     var featFuncsApplied = featureFuncs.map(_(feat))
-    if (train) featFuncsApplied = featFuncsApplied.map(x => if (x == 0F) -1F else 1F)
+    if (train) featFuncsApplied = featFuncsApplied.map(x => if (x == 0D) -1D else 1D)
     featFuncsApplied.toArray
   }
 
@@ -56,9 +55,7 @@ abstract class PosTagger {
       weights += tag -> weights(tag).zip(Stream.continually(tagCounts(tag))).map { case (x, y) => x / y })
   }
 
-  def tagSent(words : List[String]): List[String] = tagSentIter(words.iterator).toList
-
-  def tagSentIter(words: Iterator[String]) = new Iterator[String] {
+  def tagSent(words: Iterable[String]) = new Iterator[String] {
 
       var prevTag = BOS_TAG
       val bigramIter = (Iterator(BOS) ++ words).sliding(2,1)
@@ -74,7 +71,7 @@ abstract class PosTagger {
           }
           else if (possibleTags.nonEmpty) {
             val featVec = getFeatureVec(ContextInfo(prevWord, prevTag, curWord), train=false)
-            val sims = possibleTags.map(x => (x, featVec.zip(weights(x)).map({ case (x, y) => x*y }).sum))  // TODO: * or + ? (was +)
+            val sims = possibleTags.map(x => (x, dotProduct(featVec, weights(x))))
             bestTag = sims.reduce((x, y) => if (x._2 > y._2) x else y)._1
           }
           prevTag = bestTag
@@ -94,7 +91,7 @@ abstract class PosTagger {
     val goldTagSeqs = corpus.readAnnotatedSentences().map(x => x.map(_.pos))
     predictedTagSeqs.zip(goldTagSeqs).foreach {
       case (predSeq, goldSeq) =>
-        predSeq.zip(goldSeq).foreach {
+        predSeq.toList.zip(goldSeq).foreach {
           case EqualPair(_) => correct += 1; total += 1
           case _ => total += 1
         }
@@ -104,13 +101,12 @@ abstract class PosTagger {
 }
 
 object PosTagger {
-
-  def loadTaggerData(taggerFile: String) = {
+  def loadTaggerDataFromResource(res: Source): (Map[String, Array[Double]], Map[String, Set[String]]) = {
     implicit val formats = DefaultFormats
-    val json = parse(Source.fromFile(taggerFile).mkString)
-    val loadedWeights = (json \ "weights").extract[Map[String, Array[Float]]]
+    val json = parse(res.mkString)
+    val loadedWeights = (json \ "weights").extract[Map[String, Array[Double]]]
     val loadedSeenTags = (json \ "seenTags").extract[Map[String, Set[String]]]
     (loadedWeights, loadedSeenTags)
   }
-
+  def loadTaggerData(filename: String) = loadTaggerDataFromResource(Source.fromFile(filename))
 }

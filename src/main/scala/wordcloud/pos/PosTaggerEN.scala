@@ -2,11 +2,13 @@ package wordcloud.pos
 
 import wordcloud.utils.corpus.BOS_TAG
 
+import scala.io.Source
+
 class PosTaggerEN extends PosTagger {
 
-  override val defaultTag: String = "NN"
+  protected override val defaultTag: String = "NN"
 
-  override val featureFuncs: List[ContextInfo => Float] = List(
+  protected override val featureFuncs: List[ContextInfo => Double] = List(
     x => if (x.prevTag == BOS_TAG) 1 else 0,  // beginning of sentence
     x => if (x.prevWord.length <= 3) 1 else 0,
     x => if (x.prevWord.length > 3 &&  x.prevWord.length < 6) 1 else 0,
@@ -32,13 +34,14 @@ class PosTaggerEN extends PosTagger {
 }
 
 object PosTaggerEN {
-
-  def load(taggerFile: String): PosTagger = {
-    val (loadedWeights, loadedSeenTags) = PosTagger.loadTaggerData(taggerFile)
-    new PosTaggerEN() {
-      weights = loadedWeights
-      seenTags = loadedSeenTags
-    }
+  /** loads an english POS tagger saved in json format
+    * unfortunately the feature extracting rules are not easily serializable
+    * so we need to define the load function for each subclass separately
+    */
+  def load(taggerFile: String) = new PosTaggerEN {
+    (weights, seenTags) = PosTagger.loadTaggerData(taggerFile)
   }
-
+  def loadDefault = new PosTaggerEN {
+    (weights, seenTags) = PosTagger.loadTaggerDataFromResource(Source.fromResource("trained_classifiers/tagger_en.json"))
+  }
 }

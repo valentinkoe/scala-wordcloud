@@ -2,52 +2,66 @@ package wordcloud
 
 import wordcloud.tokenize._
 import wordcloud.pos._
-import wordcloud.chunk.SimpleChunker
+import wordcloud.chunk.ChunkerEN
 
-import scala.collection.immutable.ListMap
-import org.json4s.DefaultFormats
-import org.json4s.jackson.Json
-
+/**
+  * bundles up processing steps for wordcloud requests
+  */
 object Processing {
 
-  lazy val tokenizerDE = new TokenizerDE
-  lazy val taggerDE = PosTaggerDE.load("src/main/resources/trained_taggers/tagger_de.json")
+  // load processors only for requested languages, thus lazy
+  private lazy val tokenizerDE = new TokenizerDE
+  private lazy val taggerDE = PosTaggerDE.loadDefault
 
-  lazy val tokenizerEN = new TokenizerEN
-  lazy val taggerEN = PosTaggerEN.load("src/main/resources/trained_taggers/tagger_en.json")
+  private lazy val tokenizerEN = new TokenizerEN
+  private lazy val taggerEN = PosTaggerEN.loadDefault
+  private lazy val chunkerEN = ChunkerEN.loadDefault
 
-  // TODO: chunkers
-
-  def getTokens(input: Iterator[Char], lang: String, adj: Boolean, noun: Boolean): Iterator[String] = {
+  /** tokenizes the given text and optionally filters adjectives */
+  def getTokens(input: Iterator[Char], lang: String, adj: Boolean=false): Iterator[String] = {
 
     if (!List("de", "en").contains(lang)) throw UnsupportedLanguageException(s"language not yet supported: $lang")
 
+    // get the processors according to requested language
     var tokenizer: Tokenizer = null
     var tagger: PosTagger = null
     var adjStart: String = null
-    var nounStart: String = null
 
     if (lang == "de") {
       tokenizer = tokenizerDE
       tagger = taggerDE
       adjStart = "ADJ"
-      nounStart = "N"
     }
     else if (lang == "en") {
       tokenizer = tokenizerEN
       tagger = taggerEN
       adjStart = "JJ"
-      nounStart = "NN"
     }
 
-    tokenizer.tokenizedSents(input)
-      .map(x => x.zip(tagger.tagSent(x)))
-      .flatten
-      .withFilter(x => if ((!adj && !noun)
-                            || (adj && x._2.startsWith(adjStart))
-                            || (noun && x._2.startsWith(nounStart))) true
-                        else false)
-      .map(x => x._1)
+    tokenizer.tokenizedSents(input)                 // tokenize
+      .map(x => x.zip(tagger.tagSent(x).toList))    // tag with POS
+      .flatten                                      // remove sentence boundaries
+      .withFilter(x => if (!adj || (adj && x._2.startsWith(adjStart))) true   // filter non-adjectives if requested
+                       else false)
+      .map(x => x._1)                               // remove POS tags again
   }
 
+  /** extracts noun chunks from the given text */
+  def getChunks(input: Iterator[Char], lang: String): Iterator[String] = {
+
+    if (lang != "en") throw UnsupportedLanguageException(s"language not yet supported: $lang")
+
+    // currently only English is supported for chunking
+    val tokenizer = tokenizerEN
+    val tagger = taggerEN
+    val chunker = chunkerEN
+
+    tokenizer.tokenizedSents(input)               // tokenize
+      .map(x => x.zip(tagger.tagSent(x).toList))  // tag with POS
+      .map(_.unzip)                               // separate iterables of tokens and text
+      .map {
+        case (toks, tags) => chunker.extractChunksFromSent(toks, tags)  // get chunks
+      }
+      .flatten                                    // remove sentence boundaries
+  }
 }

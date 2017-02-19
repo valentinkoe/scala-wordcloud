@@ -1,19 +1,25 @@
 package wordcloud.chunk
 
-import wordcloud.utils.dotProduct
-import wordcloud.utils.EqualPair
+import java.io.PrintWriter
+import scala.io.Source
+
+import org.json4s.DefaultFormats
+import org.json4s.jackson.Json
+import org.json4s.jackson.JsonMethods._
+
+import wordcloud.utils.{dotProduct, splitAt}
 import wordcloud.utils.corpus._
 
 abstract class Chunker {
 
-  val threshold: Float
-  val alpha: Float
+  private val threshold = 0.5F
+  private val alpha = 2
 
-  val featureFuncs: List[ContextInfo => Float]
+  protected val featureFuncs: List[ContextInfo => Double]
 
-  var weights: Array[Float]  // initially all 1, same size as featureFuncs List
+  protected var weights: Array[Double]  // initially all 1, same size as featureFuncs List
 
-  def getFeatureVec(feat: ContextInfo): Array[Float] = featureFuncs.map(_(feat)).toArray
+  private def getFeatureVec(feat: ContextInfo): Array[Double] = featureFuncs.map(_(feat)).toArray
 
   def train(corpus: CorpusReader): Unit = {
     corpus.readAnnotatedSentences().foreach {
@@ -25,16 +31,14 @@ abstract class Chunker {
             val fVec = getFeatureVec(ContextInfo(prevWord, prevTag, curWord, curTag, precWord, precTag))
             val predicted = if (dotProduct(fVec, weights) > threshold) IS_CHUNK else NO_CHUNK
             if (predicted != curC) {
-              if (curC) weights = weights.zip(fVec).map {case (a, b) => if (b == 1.0) a*alpha else a}
-              else weights = weights.zip(fVec).map {case (a, b) => if (b == 1.0) a/alpha else a}
+              if (curC) weights = weights.zip(fVec).map {case (a, b) => if (b == 1.0) a*alpha else a}  // is part of a chunk
+              else weights = weights.zip(fVec).map {case (a, b) => if (b == 1.0) a/alpha else a}  // is not part of a chunk
             }
         }
     }
   }
 
-  def tagSent(sent: List[String], posTags: List[String]) = tagSentIter(sent.iterator, posTags.iterator).toList
-
-  def tagSentIter(sent: Iterator[String], posTags: Iterator[String]) = new Iterator[ChunkVal] {
+  def tagSent(sent: Iterable[String], posTags: Iterable[String]) = new Iterator[ChunkVal] {
 
       val wordIter = Iterator(BOS) ++ sent ++ Iterator(EOS)
       val posIter = Iterator(BOS_TAG) ++ posTags ++ Iterator(EOS_TAG)
@@ -44,37 +48,48 @@ abstract class Chunker {
 
       def next() = trigramIter.next match {
         case List((prevWord, prevTag), (curWord, curTag), (precWord, precTag)) =>
-          val cInfo = ContextInfo(prevWord, prevTag, curWord, curTag, precWord, precTag)
-          val featVec = getFeatureVec(cInfo)
+          val featVec = getFeatureVec(ContextInfo(prevWord, prevTag, curWord, curTag, precWord, precTag))
           if (dotProduct(featVec, weights) > threshold) IS_CHUNK
-          NO_CHUNK
+          else NO_CHUNK
       }
   }
 
+  def extractChunksFromSent(sent: Iterable[String], tags: Iterable[String]): Iterator[String] =
+    splitAt(sent.iterator.zip(tagSent(sent, tags)),
+            (x: (String, ChunkVal)) => !x._2)
+      .map(_.map(_._1))
+      .map(_.mkString(" "))
+
   def getAccuracy(corpus: CorpusReader): Double = {
-    0.0 // TODO
-//    var correct = 0.0
-//    var total = 0.0
-//    val predictedTagSeqs = corpus.readSentences().map(tagSent)
-//    val goldTagSeqs = corpus.readAnnotatedSentences().map(x => x.map(_.pos))
-//    predictedTagSeqs.zip(goldTagSeqs).foreach {
-//      case (predSeq, goldSeq) =>
-//        predSeq.zip(goldSeq).foreach {
-//          case EqualPair(_) => correct += 1; total += 1
-//          case _ => total += 1
-//        }
-//    }
-//    correct/total
+    var correct = 0.0
+    var total = 0.0
+    corpus.readAnnotatedSentences().foreach(
+      sentence =>
+        (List(BOS_TOKEN) ++ sentence ++ List(EOS_TOKEN)).sliding(3, 1).foreach {
+          case List(AnnotatedToken(prevWord, prevTag, prevC),
+          AnnotatedToken(curWord, curTag, curC),
+          AnnotatedToken(precWord, precTag, precC)) =>
+            val fVec = getFeatureVec(ContextInfo(prevWord, prevTag, curWord, curTag, precWord, precTag))
+            val predicted = if (dotProduct(fVec, weights) > threshold) IS_CHUNK else NO_CHUNK
+            if (predicted == curC) correct += 1
+            total += 1
+        }
+    )
+    correct/total
   }
 
   def save(filename: String): Unit = {
-    // TODO
+    val jString = Json(DefaultFormats).writePretty(Map[String, Any]("weights" -> weights))
+    new PrintWriter(filename) {write(jString); close()}
   }
 
 }
 
 object Chunker {
-  //def load(resource: String): Chunker = {
-  //  new Chunker // TODO
-  //}
+  def loadWeightsFromResource(res: Source): Array[Double] = {
+    implicit val formats = DefaultFormats
+    val json = parse(res.mkString)
+    (json \ "weights").extract[Array[Double]]
+  }
+  def loadWeights(chunkerFile: String) = loadWeightsFromResource(Source.fromFile(chunkerFile))
 }

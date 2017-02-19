@@ -13,7 +13,7 @@ package object utils {
     * @tparam T type of iterated items
     * @return iterator of lists
     */
-  def iterSplitAt[T](iter: Iterator[T], p: T => Boolean, keepSplitVals:Boolean = false): Iterator[List[T]] =
+  def splitAt[T](iter: Iterator[T], p: T => Boolean, keepSplitVals:Boolean = false): Iterator[List[T]] =
     new Iterator[List[T]] {
       val nextList = new ListBuffer[T]
       def hasNext() = iter.hasNext

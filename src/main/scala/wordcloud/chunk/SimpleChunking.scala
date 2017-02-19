@@ -1,12 +1,10 @@
 package wordcloud.chunk
 
-import wordcloud.utils.iterSplitAt
+import wordcloud.utils.splitAt
 
-class SimpleChunker {
-
+object SimpleChunking {
   def getChunks(taggedSent: List[(String, String)]): List[String] = {
-    iterSplitAt(taggedSent.iterator, (x: (String, String)) => !x._2.startsWith("N"))
+    splitAt(taggedSent.iterator, (x: (String, String)) => !x._2.startsWith("N"))
       .map(_.map(_._1)).map(_.mkString(" ")).toList
   }
-
 }

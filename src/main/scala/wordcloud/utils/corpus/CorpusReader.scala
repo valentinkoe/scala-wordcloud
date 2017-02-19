@@ -25,11 +25,11 @@ abstract class CorpusReader(corpusFile: String) {
   }
 
   def readSentences(): Iterator[List[String]] = {
-    iterSplitAt(readTokens(), (x: String) => x == "")
+    splitAt(readTokens(), (x: String) => x == "")
   }
 
   def readAnnotatedSentences(): Iterator[List[AnnotatedToken]] = {
-    iterSplitAt(readAnnotatedTokens(), (x: AnnotatedToken) => x == EOS_TOKEN)
+    splitAt(readAnnotatedTokens(), (x: AnnotatedToken) => x == EOS_TOKEN)
   }
 
   def readAnnotatedNgramSentences(n: Int): Iterator[Iterator[List[AnnotatedToken]]] = {
