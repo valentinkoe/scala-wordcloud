@@ -5,6 +5,19 @@
    min-width: 768px;
 }
 
+.wc-container{
+   width: 80%;
+   height: 0 auto;
+   margin: auto;
+   min-width: 768px;
+   position: relative;
+}
+
+.word{
+	margin-left: 10px;
+	padding: 10px;
+}
+
 h1{
     text-align: center;
     font-size: 24px;
@@ -20,6 +33,11 @@ h1{
     visibility: hidden;
     background-image:url('../img/default.gif');
 }
+
+.outer-container a{
+	text-align: center;
+	display: inline-block;
+	}
 
 div#loading{
     width: 80px;
@@ -44,3 +62,14 @@ form{
     margin: auto;
     background-image: url('../img/hex-loader-rotated.gif');
 }
+
+.vertical-text {
+    transform: rotate(90deg);
+    transform-origin: left top 0;
+}
+
+.vertical-text-180 {
+    transform: rotate(270deg);
+    transform-origin: left top 0;
+}
+
