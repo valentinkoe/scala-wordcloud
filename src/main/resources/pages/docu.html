@@ -1,0 +1,205 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+
+    <title> Scala WordCloud Project </title>
+    <meta name="description" content="Scala WordCloud Project">
+    <meta name="author" content="Valentin Deyringer, Florian Pfingstag">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <style>
+        body {
+            width: 100%;
+            text-align: center;
+            background-position: center;
+            background-image: url(http://orig01.deviantart.net/0689/f/2015/283/a/a/clouds_by_alkab_art-d9ckxob.jpg);
+            background-attachment: fixed;
+        }
+        #centerContainer {
+            width: 900px;
+            text-align: left;
+            margin: 0px auto;
+            padding: 0 0 50px;
+            position: relative;
+        }
+        footer {
+            bottom: 10px;
+            height: 25px;
+            left: 0;
+            position: absolute;
+            width: 100%;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="centerContainer">
+
+    <h1>Scala WordCloud Project</h1>
+
+    <p>
+        This is a course project for the course
+        <a href="http://www.pms.ifi.lmu.de/lehre/hoehereps/16ws17/">Höhere Programmiersprachen: Scala</a>
+        at the Ludwig-Maximilians-Universität München (Winter Term 16/17)
+    </p>
+
+
+    Contents of this documentation<br/>
+    <ul>
+        <li><a href="#wordcloud">wordcloud</a>
+            <ul>
+                <li><a href="#tokenization">tokenization</a></li>
+                <li><a href="#postagging">POS tagging</a></li>
+                <li><a href="#chunking">chunking</a></li>
+                <li><a href="#corpora">corpora</a></li>
+            </ul>
+        </li>
+        <li><a href="#webapp">webapp</a></li>
+        <li><a href="#futurework">future work</a></li>
+    </ul>
+
+
+    <h2><a name="wordcloud">wordcloud</a></h2>
+
+    <p>
+        Wordclouds are often used to visualize the contents of a text by displaying the words in different sizes and
+        color according to their frequency in the text.
+        Basic approaches to creating such wordclouds naively split the text into words and count the number of
+        occurrences to determine size and color to display the words in. Some more advanced approaches also apply
+        <a>stopword removal</a>, i.e. removing words like <i>a</i> <a>the</a> and <a>and</a> that do not have
+        informational character.
+    </p>
+    <p>
+        In this project we wanted build a wordcloud with some <i>linguistic knowledge</i>. That is, using
+        <a href="https://en.wikipedia.org/wiki/Tokenization_(lexical_analysis)">tokenization</a> techniques,
+        <a href="https://en.wikipedia.org/wiki/Part-of-speech_tagging">part of speech tagging</a>
+        and methods to extract linguistic units spanning several words aka
+        <a href="https://en.wikipedia.org/wiki/Tokenization_(lexical_analysis)">chunking</a> our wordcloud should
+        provide a better picture of the content and topics in the text.<br/>
+        Our system supports English and German text as input.
+    </p>
+
+    <h3><a name="tokenization">tokenization</a></h3>
+
+    <p>
+        Splitting a string of characters into sentences or words (or tokens, as the definition of a word is also
+        sometimes not very clear) is not as trivial as it may look at the first glance.
+    </p>
+    <p>
+        The tokenizers in the package <code>wordcloud.tokenize</code> supply methods to perform both tasks of sentence
+        segmentation and tokenization for the supported languages.
+    </p>
+    <p>
+        To achieve this goal, hand crafted regular expressions and scala's powerful pattern matching is used.
+        Abbreviations are a major pitfall of tokenization as they introduce normally sentence delimiting dots in places
+        where a sentence does not end. To address this problem, we incorporated abbreviation lists for each language
+        taken from <a href="https://github.com/moses-smt/mosesdecoder">moses</a> a famous Statistical Machine
+        Translation system.
+    </p>
+
+    <h3><a name="postagging">POS tagging</a></h3>
+
+    <p>
+        To assign parts of speech to the tokens, in <code>wordcloud.pos</code> we implemented a very basic learning
+        algorithm similar to the <a href="https://en.wikipedia.org/wiki/Perceptron">perceptron algorithm</a> which
+        counts the occurrence of features based on the context of the token and its true tag in a training corpus
+        (<a href="#corpora">more info below</a>).<br/>
+        The extracted features are heuristically chosen and tags are assigned in a greedy fashion, that is, always the
+        most probable one is chosen. Context information is gathered from the preceding word, the preceding word's tag
+        and the current word.
+    </p>
+    <p>
+        The taggers reach an accuracy of about 80&percnt; correctly assigned tags in our tests.
+        State of the Art taggers obtain more than 96&percnt; accuracy, but compared to circa 20&percnt; by always
+        assigning the most common tag, our results are relatively good regarding the simplicity of the approach.<br/>
+        The trained taggers respectively the trained weights can easily be saved to and loaded from json files.
+    </p>
+
+    <h3><a name="chunking">chunking</a></h3>
+
+    <p>
+        To extract not only single tokens but also sequences of cohesive tokens (chunks) as units for the wordcloud
+        <code>wordcloud.chunk</code> supplies another algorithm, namely the
+        <a href="https://en.wikipedia.org/wiki/Winnow_(algorithm)">winnow algorithm</a> to find <i>noun chunks</i> by
+        binary labeling tokens for being part of such a chunk or not.<br/>
+        The feature extraction works the same as for the POS tagger but takes into account a larger context, that is
+        the preciding word, the current word and the following word and their corresponding POS tags.
+    </p>
+    <p>
+        Unfortunately only the english data we used had the chunk labels readily available
+        (<a href="#corpora">more info below</a>) and thus, currently only english text can be <i>noun-chunked</i>.
+    </p>
+    <p>
+        The english chunker we trained also achieved about 80&percnt; accuracy in our tests.
+        Trained chunkers respectively their trained weights can also be saved to the json format.
+    </p>
+
+    <h3><a name="corpora">corpora</a></h3>
+
+    <p>
+        To train the classifiers, we needed labeled data. Therefor we used the following corpora:
+        <ul>
+        <li><a href="http://www.coli.uni-saarland.de/projects/sfb378/negra-corpus/negra-corpus.html">NEGRA</a><br/>
+            german corpus, labeled with the <a href="http://www.ims.uni-stuttgart.de/forschung/ressourcen/lexika/TagSets/stts-table.html">STTS tagset</a>
+        </li>
+        <li><a href="http://www.ims.uni-stuttgart.de/forschung/ressourcen/korpora/tiger.html">TIGER</a><br/>
+            german corpus, also labeled with STTS tags
+        </li>
+        <li>
+            <a href="http://www.clips.uantwerpen.be/conll2000/chunking/">data for the Conll 2000 shared task</a><br/>
+            english corpus, subset of the <a href="https://catalog.ldc.upenn.edu/LDC2000T43">Wall Street Journal Corpus</a>, labeled with
+            <a href="https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html">Penn Treebank POS tags</a>
+            and additional chunk informations
+        </li>
+        </ul>
+    </p>
+
+    <h2><a name="webapp">wordcloud</a></h2>
+
+    <p>
+        To display the results we implemented a webapp using <a href="www.http4s.org">http4s</a> that communicates
+        via a websocket.
+        Text data can be read from a file or typed into a text field.
+        The user can choose between displaying only adjectives, noun chunks or neither (only tokens).
+
+        The resulting strings are then updated live according to the number of occurrences in the input and increase
+        in size and change color accordingly.
+    </p>
+
+    <h2><a name="futurework">Future work</a></h2>
+
+    <ul>
+        <li>
+            weighting results<br/>
+            To show more meaningful results, not only the bare counts of the extracted units, but other metrics like
+            <a href="https://en.wikipedia.org/wiki/Tf%E2%80%93idf">tf/idf</a> could be applied filtering less meaningful
+            results
+        </li>
+        <li>
+            improvement of classifiers<br/>
+            With an accuracy of about 80&percnt; for POS tagging and chunk labeling the results leave much room for
+            improvement. One could fine tune the feature extraction rules and optimize parameters of the learning
+            algorithms as well as the algorithms themselves.<br/>
+            Above all it would be desirable to implement some very useful procedures of typical machine learning like
+            validation on data held out from training.
+        </li>
+        <li>
+            scraper<br/>
+            Initially we also wanted to support scraping text from websites and then processing it the same way as the
+            other data.
+        </li>
+    </ul>
+
+
+
+    <footer>
+        Credits for background image: <a href="http://alkab-art.deviantart.com/">alkab-art@deviantart</a>
+    </footer>
+    </div>
+</body>
+
+</html>
