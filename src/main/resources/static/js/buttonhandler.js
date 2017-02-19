@@ -11,6 +11,12 @@ wordslist = {};
       return false;
 	}
   };
+  document.getElementById("clear").onclick = function(event) {
+	event.preventDefault();
+  $(".wc-container").empty();
+  wordslist = {};
+	};
+ 
   
     function handleFileSelect(evt) {
     var files = evt.target.files; // FileList object
