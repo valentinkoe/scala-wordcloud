@@ -2,7 +2,7 @@ package wordcloud.chunk
 
 import wordcloud.utils.iterSplitAt
 
-class SimpleChunker extends {
+class SimpleChunker {
 
   def getChunks(taggedSent: List[(String, String)]): List[String] = {
     iterSplitAt(taggedSent.iterator, (x: (String, String)) => !x._2.startsWith("N"))

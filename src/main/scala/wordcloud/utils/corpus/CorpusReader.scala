@@ -10,7 +10,7 @@ abstract class CorpusReader(corpusFile: String) {
 
   def lineToToken(line: String): String
 
-  def lineToPOSAnnotatedToken(line : String): POSAnnotatedToken
+  def lineToAnnotatedToken(line : String): AnnotatedToken
 
   def readTokens(): Iterator[String] = {
     var lines = Source.fromFile(corpusFile).getLines()
@@ -18,18 +18,22 @@ abstract class CorpusReader(corpusFile: String) {
     lines.map(x => lineToToken(x))
   }
 
-  def readPOSAnnotatedTokens(): Iterator[POSAnnotatedToken] = {
+  def readAnnotatedTokens(): Iterator[AnnotatedToken] = {
     var lines = Source.fromFile(corpusFile).getLines()
-    if (commentIndicator != null) lines = lines.filter(!_.startsWith(commentIndicator))
-    lines.map(x => lineToPOSAnnotatedToken(x))
+    if (commentIndicator != null) lines = lines.withFilter(!_.startsWith(commentIndicator))
+    lines.map(x => lineToAnnotatedToken(x))
   }
 
   def readSentences(): Iterator[List[String]] = {
     iterSplitAt(readTokens(), (x: String) => x == "")
   }
 
-  def readPOSAnnotatedSentences(): Iterator[List[POSAnnotatedToken]] = {
-    iterSplitAt(readPOSAnnotatedTokens(), (x: POSAnnotatedToken) => x == EOS_TOKEN)
+  def readAnnotatedSentences(): Iterator[List[AnnotatedToken]] = {
+    iterSplitAt(readAnnotatedTokens(), (x: AnnotatedToken) => x == EOS_TOKEN)
+  }
+
+  def readAnnotatedNgramSentences(n: Int): Iterator[Iterator[List[AnnotatedToken]]] = {
+    readAnnotatedSentences().map(s => (List.fill(n-2)(BOS_TOKEN) ++ s ++ List.fill(n-2)(EOS_TOKEN)).sliding(n, 1))
   }
 
 }
@@ -39,16 +43,16 @@ object CorpusReader {
 
     // not necessary just to suppress warnings
     override def lineToToken(line: String): String = ???
-    override def lineToPOSAnnotatedToken(line: String): POSAnnotatedToken = ???
+    override def lineToAnnotatedToken(line: String): AnnotatedToken = ???
 
     override def readTokens(): Iterator[String] = {
       val iterators = corpusReaders.map(x => x.readTokens())
       iterators.foldLeft(Iterator[String]())(_ ++ _)
     }
 
-    override def readPOSAnnotatedTokens(): Iterator[POSAnnotatedToken] = {
-      val iterators = corpusReaders.map(x => x.readPOSAnnotatedTokens())
-      iterators.foldLeft(Iterator[POSAnnotatedToken]())(_ ++ _)
+    override def readAnnotatedTokens(): Iterator[AnnotatedToken] = {
+      val iterators = corpusReaders.map(x => x.readAnnotatedTokens())
+      iterators.foldLeft(Iterator[AnnotatedToken]())(_ ++ _)
     }
 
     override def readSentences(): Iterator[List[String]] = {
@@ -56,9 +60,9 @@ object CorpusReader {
       iterators.foldLeft(Iterator[List[String]]())(_ ++ _)
     }
 
-    override def readPOSAnnotatedSentences(): Iterator[List[POSAnnotatedToken]] = {
-      val iterators = corpusReaders.map(x => x.readPOSAnnotatedSentences())
-      iterators.foldLeft(Iterator[List[POSAnnotatedToken]]())(_ ++ _)
+    override def readAnnotatedSentences(): Iterator[List[AnnotatedToken]] = {
+      val iterators = corpusReaders.map(x => x.readAnnotatedSentences())
+      iterators.foldLeft(Iterator[List[AnnotatedToken]]())(_ ++ _)
     }
 
   }

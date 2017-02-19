@@ -1,5 +1,3 @@
 package wordcloud.pos
 
-import wordcloud.utils.POSAnnotatedToken
-
-case class ContextInfo(prevToken: POSAnnotatedToken, word: String)
+case class ContextInfo(prevWord: String, prevTag: String, word: String)
